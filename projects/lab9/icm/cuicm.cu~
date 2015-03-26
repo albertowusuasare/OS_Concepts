@@ -1,0 +1,286 @@
+/* Lab 9: GPU Image Restoration
+ * Albert Owusu-Asare, Mark Lewis, Phineas Schlossberg
+ * Box:      4497    ,    3948   ,     4570
+ * A binary image restoration done using a GPU.
+ * Based heavily upon Jerod Weinmans ICM, see below for
+ * details.
+ * See www.cs.grinnell.edu/~weinman/courses/CSC213/2014F/labs/cuda.html
+ * for full information.
+ */
+
+
+/* Iterated Conditional Modes (ICM) binary image restoration
+ *
+ * Created by Jerod Weinman, 9 June 2008
+ * Revised 15 August 2012 to include timing
+ * Revised 13 August 2014 to use bitmap library and safely verify user input
+ */
+
+#include "bitmap.h"
+#include <stdio.h>
+#include <sys/time.h>
+#include <string.h>
+#include "cubitmap.h"
+
+#define DEFAULT_ALPHA 2
+#define DEFAULT_BETA 1
+#define MAX_ITER 20
+#define TILE_WIDTH 4
+__device__ int converged_d; /* Device variable */
+           int converged_h; /* Host variable */ 
+
+/* icmupdate - Calculate one ICM update on an image
+ *
+ * Produces
+ *  converged, an int
+ *
+ * Preconditions:
+ *  img is the original binary image
+ *  restImg is the current restored image result
+ *  workImg is a buffer for storing the update
+ *  img, restImg, and workImg are all the same size
+ *
+ * Postconditions:
+ *  update is stored in workImg
+ *  converged==1 indicates update yielded no change from restImg
+ */
+__global__ void icmUpdate(bit* p_orig_d, bit* p_rest_d, bit * p_work_d,
+                          float alpha, float beta, int rows, 
+                          int cols)
+{
+
+  float cost[2]; /* cost array for both binary states at a pixel */
+
+  bit *restBits = p_rest_d;
+  bit *workBits = p_work_d;  
+
+  int r = blockIdx.y * TILE_WIDTH + threadIdx.y; /* Pixel row */
+  int c = blockIdx.x * TILE_WIDTH + threadIdx.x; /* Pixel col */
+  int index = r*cols + c;   /* Pixel linear index */
+  
+  cost[0] = 0;  /* Initialize costs to zero */
+  cost[1] = 0;
+      
+      
+  /* Local cost: for flipping pixel (r,c). This assigns the local
+   * cost alpha to the opposite state of that at (r,c) */
+  cost[1- p_orig_d[index]] = alpha;
+      
+  /* Neighborhood cost: Adds beta to the cost for the opposite
+   * value of each neighboring state. Note that the neighboring
+   * state values used are from the most recent iteration of the
+   * restored image. Also, ordered to maximize TLB hits. */
+  if (r>0)
+    {
+      cost[1-restBits[index-cols]]   += beta; /* North */
+      if (c > 0)      cost[1-restBits[index-cols-1]] += beta; /* NorthWest */
+      if (c < cols-1) cost[1-restBits[index-cols+1]] += beta; /* NorthEast */
+    }
+  if (c > 0)        cost[1-restBits[index-1]]      += beta; /* West */
+  if (c < cols-1)   cost[1-restBits[index+1]]      += beta; /* East */
+  if (r < rows-1)
+    {
+      cost[1-restBits[index+cols]]   += beta;  /* South */
+      if (c > 0)      cost[1-restBits[index+cols-1]] += beta; /* SouthWest */
+      if (c < cols-1) cost[1-restBits[index+cols+1]] += beta; /* SouthEast */
+    }
+
+  /* Assign whichever state has lower cost to the intermediate
+   * "working" restored image */
+  workBits[index] = (cost[0] > cost[1]);
+  if(workBits[index]!=restBits[index]) {
+        converged_d = 0;
+  }
+}
+
+/* runicm - Run the ICM algorthm with parameters alpha and beta on an image
+ *
+ * Preconditions:
+ *  img is the original binary image
+ *  restImg is an already allocated buffer for the restored image result
+ *  img and restImg are the same size
+ *
+ * Postconditions:
+ *  ICM is run on img until convergence or an iteration limit is reached
+ *  Result is stored in restImg buffer
+ */
+__host__ void runicm(const bm_t *img, bm_t *restImg, double alpha, double beta)
+{ 
+  if ( bmcopy(restImg, img) < 0 )              /* Copy original into restored */
+    exit(EXIT_FAILURE);
+
+  /* Allocate space on device */
+  /* Taken from Jerod Weinman's cuinvert.cu */
+  bit* p_orig_d = cu_bmalloc(img->rows, img->cols);
+  bit* p_rest_d = cu_bmalloc(img->rows, img->cols);
+  bit* p_work_d = cu_bmalloc(img->rows, img->cols);
+  if (p_orig_d==NULL || p_rest_d==NULL || p_work_d==NULL) 
+  {
+    fprintf(stderr,"Error allocating device image memory\n");
+    exit(EXIT_FAILURE);
+  }
+ 
+  if ( hd_bmcopy(p_orig_d, img) < 0 ) /* Copy image to device */
+    {
+      fprintf(stderr,"Error copying original image to device\n");
+      exit(EXIT_FAILURE);
+    }
+
+  /* if ( hd_bmcopy(p_rest_d, img) < 0 ) /\* Copy image to device *\/ */
+  /*   { */
+  /*     fprintf(stderr,"Error copying original image to device\n"); */
+  /*     exit(EXIT_FAILURE); */
+  /*   } */
+  if ( hd_bmcopy(p_work_d, img) < 0 ) /* Copy image to device */
+    {
+      fprintf(stderr,"Error copying original image to device\n");
+      exit(EXIT_FAILURE);
+    }
+
+  //initilize and allocate converged
+  converged_h = 1;
+  cudaError_t rc; //= cudaMalloc((void**)&converged_d, sizeof(int)); // necessary?
+  rc = cudaMemcpyToSymbol( converged_d, &converged_h, sizeof(int), 0, 
+                           cudaMemcpyHostToDevice);
+ 
+  if (rc != cudaSuccess)
+    fprintf(stderr,"Unable to copy value to device: %s", 
+            cudaGetErrorString(rc) ); 
+
+  dim3 dimGrid( img->cols / TILE_WIDTH + 1, img->rows / TILE_WIDTH + 1);
+  dim3 dimBlock( TILE_WIDTH, TILE_WIDTH );
+
+  int i;
+  for(i = 0; i < MAX_ITER; i++){ 
+    //rc = cudaMemcpyToSymbol( converged_d, &converged_h, sizeof(int), 0, 
+    // cudaMemcpyHostToDevice);
+ 
+    if (rc != cudaSuccess)
+      fprintf(stderr,"Unable to copy value to device: %s", 
+            cudaGetErrorString(rc) ); 
+    icmUpdate<<<dimGrid,dimBlock>>>(p_orig_d, p_rest_d, p_work_d,
+                                    alpha, beta, img->rows, img->cols); /* Invoke */
+
+    rc = cudaMemcpyFromSymbol( &converged_h, converged_d, sizeof(int), 0, 
+                               cudaMemcpyDeviceToHost);
+
+    if (rc != cudaSuccess)
+      fprintf(stderr,"Unable to copy value from device: %s", 
+              cudaGetErrorString(rc) ); 
+
+
+    if(converged_h) {
+      printf("converged\n");
+      break;
+    }
+    // all threads have comleted with and not converged, update
+    dd_bmcopy( p_rest_d, p_work_d, img->rows, img->cols); 
+  } // for
+
+  if (dh_bmcopy( restImg, p_work_d)<0) /* Copy updated image to host */
+    {
+      fprintf(stderr,"Error copying inverted image to host");
+      exit(EXIT_FAILURE);
+    }
+
+  if (cudaFree( p_orig_d ) != cudaSuccess ||   /* Free device memory */
+      cudaFree( p_rest_d ) != cudaSuccess ||
+      cudaFree( p_work_d )  != cudaSuccess ) {
+    fprintf(stderr,"Error releasing device memory\n");
+  }
+
+}
+
+/* Run the ICM algorithm, write the result, and print the run time */
+void run_time_icm(const char* origFile, const char* cleanFile,
+      double alpha, double beta)
+{
+
+  struct timeval start,end, diff;          /* Clock and interval measurements */
+  bm_t origImg, cleanImg;                          /* Input and output images */
+  
+  if (bmread(origFile, &origImg)<0)                       /* Read input image */
+    exit (EXIT_FAILURE);
+  
+  if (bmalloc(&cleanImg, origImg.rows, origImg.cols) < 0) /* Allocate cleaned */
+    exit (EXIT_FAILURE);
+
+  if ( gettimeofday(&start, NULL) )                         /* Get start time */
+  { 
+    perror("Could not get start time");
+    exit (EXIT_FAILURE);
+  }
+
+  runicm(&origImg, &cleanImg, alpha, beta);      /* Run restoration algorithm */
+
+  if( gettimeofday(&end, NULL) )                              /* Get end time */
+  {
+    perror("Could not get end time");
+    exit (EXIT_FAILURE);
+  }
+    
+  timersub(&end, &start, &diff);                   /* Calculate time interval */
+  printf("%u.%06u\n",diff.tv_sec,diff.tv_usec);           /* Print time (sec) */ 
+  if (bmwrite(cleanFile, &cleanImg)<0)                /* Write restored image */
+    exit (EXIT_FAILURE);
+  
+  bmfree(&cleanImg);                              /* Free our allocated image */
+}
+
+/* String to float conversion.
+ * Preconditions: 
+ *   All of str is the float
+ *   str is a null-terminated character array
+ *   cmd is a null-terminated character array
+ * Postconditions: Prints an error message of the form 
+ *   "cmd: name str must be a number" and exits the program with a failure when 
+ *    the first precondition is violated. Otherwise returns the parsed number. */
+float estrtof(char* str, char* cmd, const char* name )
+{
+  char* endPtr;             /* First unparseable character (for verification) */
+  float num = strtof(str, &endPtr);
+
+  if ( (endPtr-str) != strlen(str) ) /* Verify entire string was parsed */
+  {
+    fprintf(stderr,"%s: %s %s must be a number\n",cmd,name,str);
+    exit (EXIT_FAILURE);
+  }
+  return num;
+}
+
+/* Verify and process command line arguments. 
+ * Prints an error message and exits if any prove immediately problematic */
+void processArguments(int argc, char* argv[],
+          char** origFile, char** cleanFile,
+          float *alpha, float *beta)
+{
+  if (argc<3 || argc>5)                     /* Verify optional argument count */
+  {
+    fprintf(stderr,"Usage: %s input output [alpha] [beta]\n", argv[0]);
+    exit (EXIT_FAILURE);
+  }
+     
+  *origFile = argv[1];
+  *cleanFile = argv[2];
+
+  if (argc>3)             /* Safely process optional alpha arguments */
+    *alpha = estrtof(argv[3],argv[0],"alpha");
+  else
+    *alpha = DEFAULT_ALPHA;               /* No option given, take the default */
+  
+  if (argc>4)             /* Safely process optional alpha arguments */
+    *beta = estrtof(argv[4],argv[0],"beta");
+  else
+    *beta = DEFAULT_BETA;                 /* No option given, take the default */
+}
+/* Main program: Process user input and calculate ICM result 
+*  Usage: ./icm input output [alpha] [beta] */
+int main(int argc, char* argv[])
+{
+  char *origFile, *cleanFile;                  /* Input and output file names */
+  float alpha,beta;                               /* ICM algorithm parameters */
+ 
+  processArguments(argc,argv,&origFile,&cleanFile,&alpha,&beta);
+  run_time_icm(origFile, cleanFile, alpha, beta);    /* Time and write result */
+  exit (EXIT_SUCCESS);                                        /* Exit cleanly */
+}

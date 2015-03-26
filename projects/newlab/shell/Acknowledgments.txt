@@ -1,0 +1,13 @@
+Portions of this lab are adapted from several sources:
+
+* Lab Exercise 2.1, "A Simple Shell", in the third edition of Gary 
+Nutt's _Operating Systems_ textbook;
+
+* assignments given previously in CSC 213 by Henry Walker and Janet Davis;
+
+* operating system programming problems by Lawrence Angrave at the
+University of Illinois at Champaign-Urbana (UIUC).
+
+Janet Davis
+Grinnell College
+May 6, 2010

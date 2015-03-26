@@ -1,0 +1,107 @@
+boole$ ./batch
+++ make clean mycp myrm mytouch mymv myls
+rm -rf *.o *~ *.err *.out mycp myrm mytouch mymv myls
+gcc -g -o mycp mycp.c
+gcc -g -o myrm myrm.c
+gcc -g -o mytouch mytouch.c
+gcc -g -o mymv mymv.c
+gcc -g -o myls myls.c
+++ touch test
+++ mkdir di
+mkdir: cannot create directory `di': File exists
+++ r
+./batch: line 12: r: command not found
+++ mycp test test2
+++ mycp blah blah blah
+Syntax: mycp <source> <destination>
+++ mycp blah test
+Open Error: No such file or directory
+++ mycp test dir
+++ myrm test1 test2
+Syntax: myrm <filename>
+++ myrm testtttt
+Open Error: Bad file descriptor
+++ myrm
+Syntax: myrm <filename>
+++ myrm test2
+++ myrm ./dir/test
+Open Error: Bad file descriptor
+++ myrm dir
+++ mytouch test
+++ mytouch test test test
+Syntax: mytouch <filename>
+++ rm test3
+rm: cannot remove `test3': No such file or directory
+++ mytouch test3
+++ mymv x y z w
+Syntax: mymv <oldpath> <newpath>
+++ mymv x
+Syntax: mymv <oldpath> <newpath>
+++ mymv foo bar
+rename Error: No such file or directory
+++ mytouch test3
+++ mymv test3 dir/test3
+rename Error: No such file or directory
+++ mytouch dir/test4
+Create Error: No such file or directory
+++ mymv dir/test4 test4
+rename Error: No such file or directory
+++ mymv test4 dir/test4
+rename Error: No such file or directory
+++ mkdir testingdir
+++ mymv dir/test4 testingdir
+rename Error: No such file or directory
+++ myls x y z
+Syntax: myls <directory>/<>
+++ myls .
+test	0
+Makefile	409
+myls.c	2401
+testingdir	4096
+lsdir	4096
+test3	0
+di	4096
+mycp	13385
+batch	1443
+myls	12315
+README	5534
+mytouch	10484
+source.pdf	18521
+mycp.c	2979
+mymv.c	1574
+mymv	11124
+myrm	11412
+myrm.c	1201
+source.pdf.pdf	2217
+mytouch.c	1393
+++ myls
+test	0
+Makefile	409
+myls.c	2401
+testingdir	4096
+lsdir	4096
+test3	0
+di	4096
+mycp	13385
+batch	1443
+myls	12315
+README	5534
+mytouch	10484
+source.pdf	18521
+mycp.c	2979
+mymv.c	1574
+mymv	11124
+myrm	11412
+myrm.c	1201
+source.pdf.pdf	2217
+mytouch.c	1393
+++ mkdir lsdir
+mkdir: cannot create directory `lsdir': File exists
+++ touch lsdir/1
+++ touch lsdir/2
+++ myls lsdir
+2	15
+1	0
+++ rm -r test test3 testingdir dir
+rm: cannot remove `dir': No such file or directory
+boole$

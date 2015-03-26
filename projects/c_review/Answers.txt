@@ -1,0 +1,39 @@
+
+*FIXING THE BUGS
+
+1.
+
+The function "strcmp" returns " < 0" or "> 0" when one of the strings is less 
+than or greater than the other. It also "0" when the strings are equal. 
+Hence, we want the 'if statement'to be true only when they are equal and
+false for everything else. Anything that is not "false or 0 " is truish so
+to ensure false status for the ">0" and "<0" returns  we must invoke the '!'
+operator. Notice that the use of '!' makes the statement true when the
+strings are equal. Thus '!0' = 1.
+ 
+used www.tutorialspoint.com/ansi_c/c_strcmp.htm
+
+2. 
+The length macro works by finding the total byte size of a certain
+structure and divides it by the number of bytes a pointer to that
+strucuture.(normally the number of bytes of a pointer to a type is
+equal to the number of bytes to the type itself.eg int * = 4bytes , int =
+4bytes) Hence, by doing the division we have an idea of exactly how many of
+that type exists in the structure and therefore the length. 
+
+For a dynamically allocated array this macro would not work because we do
+not know exactly how the structure(array) is relayed in memory, 
+we just happen to know of a way to get  to that structure(the pointer to
+the array).Because we dont know much information about the array itself, we dont
+know its total amount of bytes occupied hence we cant tell the size.
+
+3. There is no 'break' after the statement in case 'h'. As a result, each
+time the '-h' option is used the statement under case 'h' is executed,
+control is transfered to the default case, and then the statement under
+defaut is exectuted. 
+
+Fix: add 'break' after the case 'h' execution.
+
+4.
+ 
+

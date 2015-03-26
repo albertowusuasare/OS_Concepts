@@ -1,0 +1,43 @@
+# Makefile bitmap for image restoration programs
+# Jerod Weinman
+# Revised 13 August 2014
+
+CC=g++ # Note g++ (rather than gcc) needed for underlying libnetpbm calls
+NVCC=nvcc
+FLAGS=-g -Wall
+CUFLAGS=-arch=sm_20
+
+pbmio: pbmio.c pbmio.h
+	$(CC) $(FLAGS) $(INCLUDES) $(LIBRARIES) -c pbmio.c
+
+bitmap: pbmio bitmap.c bitmap.h
+	$(CC) $(FLAGS) $(INCLUDES) $(LIBRARIES) -c bitmap.c
+
+cubitmap: bitmap cubitmap.cu cubitmap.h
+	$(NVCC) $(FLAGS) $(INCLUDES) $(LIBRARIES) -c cubitmap.cu
+
+invert: pbmio invert.c
+	$(CC) $(FLAGS) $(INCLUDES) $(LIBRARIES) -lnetpbm -o invert \
+	pbmio.o bitmap.o \
+	invert.c
+
+pinvert: pbmio pinvert.c
+	$(CC) $(FLAGS) $(INCLUDES) $(LIBRARIES) -lpthread -lnetpbm -o pinvert \
+	bitmap.o pbmio.o pinvert.c
+
+cuinvert: cubitmap cuinvert.cu
+	$(NVCC) $(FLAGS) $(INCLUDES) $(LIBRARIES) $(CUFLAGS) -lnetpbm -lcudart \
+	-o cuinvert cubitmap.o bitmap.o pbmio.o cuinvert.cu
+
+icm: bitmap icm.c
+	$(CC) $(FLAGS) $(INCLUDES) $(LIBRARIES) -lnetpbm -o icm \
+	bitmap.o pbmio.o icm.c
+
+picm: pbmio picm.c
+	$(CC) $(FLAGS) $(INCLUDES) $(LIBRARIES) -lnetpbm -lpthread -o picm \
+	bitmap.o pbmio.o picm.c
+
+cuicm: cubitmap cuicm.cu
+	$(NVCC) $(FLAGS) $(INCLUDES) $(LIBRARIES) $(CUFLAGS) \
+	 -lnetpbm -lcudart \
+	-o cuicm cubitmap.o bitmap.o pbmio.o cuicm.cu

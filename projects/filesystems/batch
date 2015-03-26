@@ -1,0 +1,56 @@
+#John Brady and Alber Owusu-Asare
+#Boxes 3119 and 4497
+#batch: a batch file to compile and test for correctness.
+#!/bin/bash 
+set -x
+
+make clean mycp myrm mytouch mymv myls
+
+#initialize files
+touch test
+mkdir di
+r
+mycp test test2 #test copy
+mycp blah blah blah #test num arguments
+mycp blah test #test no input file error
+mycp test dir #test copy to a directory
+
+myrm test1 test2 #test wrong number of arguments
+myrm testtttt #test with nonexistent file
+myrm #test with no arguments
+myrm test2 #remove test2 file
+myrm ./dir/test #remove file in subdirectory
+myrm dir #remove directory
+
+mytouch test #update time of pre-existing file
+mytouch test test test # wrong number of arguments
+rm test3 #ensure file does not exist
+mytouch test3 #touch a non-existing file
+
+mymv x y z w #wrong number of arguments
+mymv x # wrong number of arguments
+mymv foo bar #test nonexistent files
+mytouch test3 # create file in cur directory
+mymv test3 dir/test3 #move a file to a subdirectory
+mytouch dir/test4 #create a file inside a directory
+mymv dir/test4 test4 #move file from subdir to cur dir
+mymv test4 dir/test4 #set back in place
+mkdir testingdir
+mymv dir/test4 testingdir #move to a dir, no name specified
+
+myls x y z # wrong arguments
+myls . #specific current directory
+myls #unspecific current directory
+mkdir lsdir #make directory
+touch lsdir/1 #make file
+touch lsdir/2 #make file
+myls lsdir #list subdirectory
+
+#clean up files
+rm -r test* dir
+
+
+
+
+
+

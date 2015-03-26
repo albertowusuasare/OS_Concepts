@@ -1,0 +1,36 @@
+Program compilation:
+
+gcc -c -g -Wall -o main.o main.c
+main.c: In function ‘process_stream’:
+main.c:88:27: warning: assignment makes integer from pointer without a cast [enabled by default]
+gcc -g -o main main.o testrunner.o c_review_tests.o
+
+Test:
+
+./main -test -f7 all
+Running tests...
+ 1.help_switch         ::pass
+ 2.basic_functionality ::pass
+ 3.stderr_output       ::pass
+ 4.file_output         ::FAIL *
+ 5.malloc              ::pass
+ 6.fgets               ::pass
+ 7.strtok              ::FAIL *
+
+Test Results:7 tests,5 passed,2 failed.
+
+Testing file_output by itself:
+
+input: ./main -foutput dog cat cat dog fish
+
+in stdout:
+Looking for 5 words
+fish
+cat
+.
+
+in file 'output':
+Result:
+dog:1
+cat:2
+fish:1

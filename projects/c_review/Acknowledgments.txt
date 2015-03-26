@@ -1,0 +1,6 @@
+This assignment was adapted from operating system programming problems by 
+Lawrence Angrave at the University of Illinois at Champaign-Urbana (UIUC). 
+
+Janet Davis
+Grinnell College
+May 5, 2010

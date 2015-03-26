@@ -1,0 +1,6 @@
+/bin/pwd
+/bin/ls
+
+/bin/date -u
+/usr/bin/whoami
+/bin/echo Hello world! 

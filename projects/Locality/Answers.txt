@@ -1,0 +1,73 @@
+
+*****************************************************************************
+Authors  : Albert Owusu-Asare , Box 4497, <owusuasa@grinnell.edu>
+         : Name  Kyle Moorehead           , Box ,     <moorehea1@grinnell.edu>
+
+This document contains answers to questions from CS213 Lab: Locatlity in
+Matrix Multiplication
+
+
+Questions:
+ http://www.cs.grinnell.edu/~weinman/courses/CSC213/2014F/labs/memory.html
+
+*****************************************************************************
+
+
+Part A
+----------
+
+2. We know that the data in the matrix is stored i memory in row-major
+order. With the original implementation  there was less memory references
+made because we only had to identify a page the row was on and then loop
+through (the columns) and do computations as we go. This was nice
+because we might only have one TLB miss(the first time we access thus
+c[0,0]) and from there we might have successful hits till we run out of the
+page. When we switch the order of the loops we dont have the advantage of
+the successive addresses we refer to,(thus the addresses  packed into a single page). We might
+have to move more from page to page. This suggests we might have more TLB
+misses and hence we might make more references to the Page Table on average
+than before.
+
+3. 
+pseudocode for matrix product:
+
+for i =0 to M-1                 ---> loop 1
+    for j=0 to N-1              ---> loop 2
+        for k=0 to N-1          --->loop 3
+            c[i,j] += a[i,k] * b[k,j]
+
+Writes to 'c' and reads from 'a'are contigous because the sequence of memory 
+access follows the row-major order to which the matrices are set up in the
+first place.Thus we stand at a particular row and walk along the
+columns til we reach the address desired and hence we can take advantage of
+the spacial locality to increase TLB performance.
+
+-> There cannot be better ordering to exhibit greater contiguity in 'c' and
+'a' because for each of the possible orderings we lose even more contiguity
+in the reads from a or b or at best we gain an average contiguity like we
+have already have.Thus effectively swithching any of the loops around
+might benefit one matrix but will affect the sequence of the other(s);
+
+
+
+4.
+  for j=0 to N-1 
+          for i =0 to M-1    
+             for k=0 to N-1          
+                c[i,j] += a[i,k] * b[k,j]
+
+
+
+The memory accesses for read from 'b' and write to 'c' are not contigous.
+Each time memory is accessed to both 'b' and 'c' it is not done in
+accordance to how memory is laid out for both matrices.(row -major order)
+As a result, we move from different addresses  that are 
+not in close proximity to each other and so we dont see much continuity 
+in space as we move from one reference to the other and possibly from
+one page to the other 
+
+
+
+5.
+
+

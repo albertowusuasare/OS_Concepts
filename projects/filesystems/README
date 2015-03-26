@@ -1,0 +1,116 @@
+John Brady & Albert Owusu-Asare
+Boxes 3119 & 4497
+December 8, 2014
+CSC213, Weinman
+Lab 10: Filesystems
+README: This file is a readme for the utilities in this folder, as well
+as for the lab. Descriptions, statements of correctness, citations
+
+
+Descriptions:
+
+mycp <source> <destination> : copies a file from its source to a destination
+location, whether it be a new file of name <destination> (or
+<directory/destination>) or just a directory named <destination>. It will exit
+and return an EXIT_FAILURE status if there is an error, otherwise will execute
+and close, returning EXIT_SUCCESS. File permissions also transfer with the
+file data.
+
+myrm <filename> : removes the non-directory file types specified in the
+arguments specified on the command line. Will report an error if the file does
+not exist, path is a directory, or if the syntax is incorrect.
+
+mytouch <filename> : updates a pre-existing file (or directory) to have its
+modification time match the current system time. If no such file exists, a new
+file will be created with the modification time as the current system time.
+Will exit and return an error status if there is a wrong number of arguments,
+utime call fails, or creat call fails.
+
+mymv <oldpath> <newpath> : moves a file named <oldpath> to a directory/file
+named <newpath>
+
+myls <directory>/<> : lists all files and sizes in the current directory or
+the specified directory. Will present an error if there is an error fetching
+file size statistics, or if the syntax isn't correct.
+
+
+NOTE on mymv: We will consider advantages and disadvantages to the three
+approaches listed in Lab 10.
+
+For the first approach, all hard links to the original file would be lost
+(from unlink(2)) as the original file is deleted and a copy of the file is
+made in the new location. This would be able to traverse filesystems, but
+since the data is being copied the performance would be less than in other
+approaches and there would be a higher risk of data loss during the copying
+procedure in the event of a system crash.
+
+For the second approach, this would alleviate the performance issues of the
+first approach because we only point to the original data using a hard link
+instead of copying the file over. Moreover, unlinking the source pathname
+would not affect any of the other possible hard links pointing to it, since we
+just created a second hard link which by unlink(2) will not delete the file
+contents. However, a disadvantage would be that a hard link cannot exist in
+one file system and point to data on another file system, so this feature
+would be unavailable.
+
+For the third approach, we follow a similar method to the second approach, but
+with additional mechanisms in place. The rename(2) man page suggests that it
+only moves a file if it is required, but reading more suggests that the
+command does not work across file systems, which is a big disadvantage. Rename
+also has the capability to do nothing if the new path is already a hard link
+pointing to the same file, which should increase performance over deleting and
+remaking a hard link. Again, we see that rename does not work across
+filesystems, so we would be limited to moving a file within a filesystem.
+Furthermore, mv has the feature that you don't need to name the destination
+path file; you can just name the directory it will reside in and the filename
+will be automatically copied. Rename does not support this, but we have added
+a mechanism that allows for this behavior to work.
+
+
+
+
+Statements of Correctness:
+
+Note: For adding in perror output for issues with mycp's execution, we are
+unable to test whether or not our errors work correctly, since producing a
+situation where they would be called is very difficult. However, we can test
+(and print) for the wrong number of arguments or a missing source file, and we
+also test copying a file to a directory.
+
+For myrm, we test our program with the wrong number of arguments and with no
+arguments, which prints out the syntax. We also test it with a non-existent
+file, which prints an open error. We also successfully test myrm with a
+regular file, a file in a subdirectory, and a directory, which prints a
+directory error.
+
+For mytouch, we test it with a regular file, and then test it with the wrong
+syntax, which results in the printout of a proper syntax. We then remove a
+file to ensure it does not exist, and then call mytouch on that filename,
+which creates the file and sets its modified time to the current time of
+calling.
+
+For mymv, we test our program with the wrong number of arguments and with only
+one argument, which prints out the syntax. We also test a non-existent source
+file, which presents an appropriate error. We then check functionality by
+moving a file from the current directory to a subdirectory, and moving a file
+from a subdirectory to the current directory. Finally, we try moving a file to
+a new directory, but the file name is unspecified. The program fills in the
+blank file name with the source file name, just as mv does.
+
+For myls, we test our program with the wrong number of arguments, and we see
+proper syntax printed. We then test it with the current directory and see that
+printed. We then test it with no arguments, which still prints the current
+directory, as it should. Then we make a subdirectory, fill it with two files,
+and list the contents of that subdirectory.
+
+
+
+
+
+Citations:
+Much assistance was provided by the man documentation for the various calls.
+We also talked with Jerod Weinman regarding the choice of implementation
+for mymv.c.
+
+
+	

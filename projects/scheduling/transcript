@@ -1,0 +1,84 @@
+Script started on Mon 22 Sep 2014 10:59:55 PM CDT
+driscoll$ make clean all
+rm -rf *.o *~ sim_fcfs sim_sjn sim_rr sim_mlq
+gcc -c -Wall -o scheduler_fcfs.o scheduler_fcfs.c
+gcc -c -Wall  -DOVERHEAD=0.03 -DQUANTUM=0.0 -o nonpreemptive_scheduler_simulation.o scheduler_simulation.c
+gcc -c -Wall -o eventq.o eventq.c
+gcc -c -Wall -o stats.o stats.c
+gcc -lm -o sim_fcfs scheduler_fcfs.o nonpreemptive_scheduler_simulation.o eventq.o stats.o
+gcc -c -Wall -o scheduler_sjn.o scheduler_sjn.c
+gcc -lm -o sim_sjn scheduler_sjn.o nonpreemptive_scheduler_simulation.o eventq.o stats.o
+gcc -c -Wall  -DOVERHEAD=0.03 -DQUANTUM=0.1 -o rr_scheduler_simulation.o scheduler_simulation.c
+gcc -lm -o sim_rr scheduler_fcfs.o rr_scheduler_simulation.o eventq.o stats.o
+gcc -c -Wall -DNUM_PRIORITY_LEVELS=5 -o scheduler_mlq.o scheduler_mlq.c
+gcc -c -Wall  \
+	-DOVERHEAD=0.03 -DQUANTUM=0.1 \
+	-DNUM_PRIORITY_LEVELS=5 -o mlq_scheduler_simulation.o scheduler_simulation.c
+gcc -lm -DNUM_PRIORITY_LEVELS=5 -o sim_mlq scheduler_mlq.o mlq_scheduler_simulation.o eventq.o stats.o
+driscoll$ ./sim_fcfs
+Beginning simulation
+Scheduler overhead: 0.03
+Time quantum:       0.00
+reading job list from file:  "scheduler_job_data.txt"
+Simulation completed
+Summary statistics:
+	Current time:		  796.15
+	Number of jobs started:	      22
+	Number of jobs completed:     22
+	System throughput:	  0.0276 jobs per unit time
+	Total proc time:	  713.42
+	Total turnaround time:	 1352.37
+	Total wait time:	  638.95
+	Average turnaround time:	   61.47
+	Average wait time:	   29.04
+driscoll$ ./sim_sjn
+Beginning simulation
+Scheduler overhead: 0.03
+Time quantum:       0.00
+reading job list from file:  "scheduler_job_data.txt"
+Simulation completed
+Summary statistics:
+	Current time:		  796.15
+	Number of jobs started:	      22
+	Number of jobs completed:     22
+	System throughput:	  0.0276 jobs per unit time
+	Total proc time:	  713.42
+	Total turnaround time:	 1271.28
+	Total wait time:	  557.86
+	Average turnaround time:	   57.79
+	Average wait time:	   25.36
+driscoll$ ./sim_rr
+Beginning simulation
+Scheduler overhead: 0.03
+Time quantum:       0.10
+reading job list from file:  "scheduler_job_data.txt"
+Simulation completed
+Summary statistics:
+	Current time:		 1001.25
+	Number of jobs started:	      22
+	Number of jobs completed:     22
+	System throughput:	  0.0220 jobs per unit time
+	Total proc time:	    1.32
+	Total turnaround time:	 5265.81
+	Total wait time:	   14.56
+	Average turnaround time:	  239.36
+	Average wait time:	    0.66
+driscoll$ ./sim_mlq
+Beginning simulation
+Scheduler overhead: 0.03
+Time quantum:       0.10
+reading job list from file:  "scheduler_job_data.txt"
+Simulation completed
+Summary statistics:
+	Current time:		  729.03
+	Number of jobs started:	       1
+	Number of jobs completed:      0
+	System throughput:	  0.0014 jobs per unit time
+	Total proc time:	    0.00
+	Total turnaround time:	    0.00
+	Total wait time:	    0.03
+	Average turnaround time:	    0.00
+	Average wait time:	    0.03
+driscoll$ exit
+
+Script done on Mon 22 Sep 2014 11:00:30 PM CDT

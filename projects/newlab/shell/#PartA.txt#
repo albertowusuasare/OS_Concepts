@@ -1,0 +1,7 @@
+1. The reason that we do not need to have defined the maximum length of an
+argument string is that strsep requires that the string has a null
+terminator. Therefore, the the function will return NULL when it hits this
+null terminator so we do not need to specify a length because the function
+will know when to stop because of this null terminator. 
+
+2.

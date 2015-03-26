@@ -1,0 +1,98 @@
+
+*****************************************************************************
+Authors  : Albert Owusu-Asare , Box 4497, <owusuasa@grinnell.edu>
+         : Ezra Edgerton      , Box 3503, <edgerton@grinnell.edu>
+
+This document contains answers to questions from CS213 Lab: Threads
+
+
+Questions:
+http://www.cs.grinnell.edu/~weinman/courses/CSC213/2014F/labs/threads.html
+
+*****************************************************************************
+
+
+Answers
+-------
+
+Relevant information:
+-----------------------
+
+Number of processors available (nproc) = 4;
+processor 0:
+cpu MHz = 1600.000
+cache size = 3072 KB
+cpu cores = 4
+
+processor 1: 
+cpu MHz = 1600.000
+cache size = 3072 KB
+cpu cores = 4
+address sizes   : 36 bits physical, 48 bits virtual
+
+processor 2: 
+cpu MHz = 1600.000
+cache size = 3072 KB
+cpu cores = 2
+address sizes   : 36 bits physical, 48 bits virtual
+
+processor 3: 
+cpu MHz = 1600.000
+cache size = 3072 KB
+cpu cores = 4
+address sizes   : 36 bits physical, 48 bits virtual
+
+processor 4: 
+cpu MHz = 1600.000
+cache size = 3072 KB
+cpu cores = 4
+address sizes   : 36 bits physical, 48 bits virtual
+
+
+
+
+Part B
+-----
+
+
+3)
+a. 
+The one threaded avg run time rises at an exponential rate; while the other
+three threaded avg run times rise at roughly half the rate of the single
+threaded run.
+
+In looking at our results from our bash calls to nproc and
+less/proc/cpuinfo, we noticed that there are four processors in the
+computer, but each processor also has two cpu cores. 
+
+
+This got us thinking,because we expected the average speed of the multithreaded runs to
+decrease as more threads were introduced, not to run more or less
+identically once more than one thread was used, we reconsider our
+assumptions.The results observed for the change from one thread to two threads is as
+expected, at each matrix size, two threads runs at almost exactly half the 
+speed it takes for  a one threaded run. This makes sense because
+with two threads working through every other row in parallel, it would
+process twice as fast. 
+
+However, with more than two threads, instead of
+decreasing to 1/3 and 1/4 of the avg time for one thread as we expected,
+the three and four thread runs took about the same time. 
+
+
+We think this must be
+caused by only one of the four processors being used, and that one
+processor is using its two cores to run the threads. 
+
+In three and four threads, the two processors will be sharing time slices with each of the
+threads and run just as quickly as the two threaded run. 
+
+We then thought three should be running faster because one of the processors would be able
+to run without time sharing. However, in the pthread_join call, the program has to wait
+for all of the threads to terminate before returning, so  the quickly
+finished process will have to wait for the slow two sharing a processor to finish. Thus, it
+works as slowly as the two threaded run.
+
+
+
+b.

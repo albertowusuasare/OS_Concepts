@@ -1,0 +1,11 @@
+Script started on Tue 14 Oct 2014 06:45:13 PM CDT
+burroughs$ make
+gcc -g -Wall -D_GNU_SOURCE -c matrixop.c
+burroughs$ make ptimemultiply
+gcc -g -Wall -D_GNU_SOURCE -c matrixop.c
+gcc -g -Wall -D_GNU_SOURCE -c matrixutil.c	
+gcc -g -Wall -D_GNU_SOURCE -pthread -o ptimemultiply \
+	matrixop.o matrixutil.o ptimemultiply.c
+burroughs$ pt[K[Kexit
+
+Script done on Tue 14 Oct 2014 06:45:28 PM CDT
